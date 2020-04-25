@@ -1,4 +1,4 @@
-function listbox_TDPtrans_Callback(obj, evd, h_fig)
+function popupmenu_TA_slStates_Callback(obj,evd,h_fig)
 
 h = guidata(h_fig);
 p = h.param.TDP;
@@ -10,7 +10,7 @@ proj = p.curr_proj;
 tpe = p.curr_type(proj);
 tag = p.curr_tag(proj);
 
-p.proj{proj}.curr{tag,tpe}.kin_start{2}(2) = get(obj, 'Value');
+p.proj{proj}.curr{tag,tpe}.lft_start{2}(2) = get(obj, 'Value');
 
 h.param.TDP = p;
 guidata(h_fig, h);

@@ -9,32 +9,30 @@ clstDiag = prm.clst_start{1}(9);
 
 nTrs = getClusterNb(J,mat,clstDiag);
 [j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
+[vals,~] = binStateValues(prm.clst_res{1}.mu{J},prm.lft_start{2}(3),...
+    [j1,j2]);
+V = numel(vals);
 
-% correct current transition
-if prm.kin_start{2}(2) > nTrs
-    prm.kin_start{2}(2) = nTrs;
+% correct current state value
+if prm.lft_start{2}(2)>V
+    prm.lft_start{2}(2) = V;
 end
 
 % update fit parameters
-for j = 1:nTrs
-    if j==1 && (isempty(prm.kin_start{1}{j,1}) || ...
-            isempty(prm.kin_start{1}{j,2}))
-        prm.kin_start{1}(1,1:2) = prm.kin_def;
-    elseif j>size(prm.kin_start{1},1) || ...
-            (isempty(prm.kin_start{1}{j,1}) || ...
-            isempty(prm.kin_start{1}{j,2}))
-        prm.kin_start{1} = [prm.kin_start{1};prm.kin_start{1}(j-1,:)];
+for j = 1:V
+    if j==1 && (isempty(prm.lft_start{1}{j,1}) || ...
+            isempty(prm.lft_start{1}{j,2}))
+        prm.lft_start{1}(1,1:2) = prm.lft_def;
+    elseif j>size(prm.lft_start{1},1) || ...
+            (isempty(prm.lft_start{1}{j,1}) || ...
+            isempty(prm.lft_start{1}{j,2}))
+        prm.lft_start{1} = [prm.lft_start{1};prm.lft_start{1}(j-1,:)];
     end
 end
-prm.kin_start{1} = prm.kin_start{1}(1:nTrs,:);
-prm.kin_res = repmat(def.kin_res,nTrs,1);
+prm.lft_start{1} = prm.lft_start{1}(1:V,:);
+prm.lft_res = repmat(def.lft_res,V,1);
 
-% build dwell-time histograms
-for k = 1:nTrs
-    wght = prm.kin_start{1}{k,1}(4)*prm.kin_start{1}{k,1}(1);    
-%     excl = prm.kin_start{1}{k,1}(8);
-    excl = false;
-    mols = unique(prm.clst_res{1}.clusters{J}(:,4));
-    prm.clst_res{4}{k} = getDtHist(prm.clst_res{1}.clusters{J},...
-        [j1(k),j2(k)], mols, excl, wght);
+prm.clst_res{4} = cell(1,V);
+for v = 1:V
+    prm.clst_res{4}{v} = updateDtHist(prm,[],v);
 end

@@ -171,7 +171,8 @@ if strcmp(opt, 'TDP') || strcmp(opt, 'all')
         setProp(get(h.uipanel_TA, 'Children'), 'Enable', 'off');
         set([h.pushbutton_help h.pushbutton_TDPimpOpt ...
             h.pushbutton_TDPaddProj], 'Enable', 'on');
-        set(h.listbox_TDPtrans, 'String', {''}, 'Value', 1);
+        set(h.popupmenu_TA_slStates, 'String', {'Select a state value'}, ...
+            'Value', 1);
         set([h.axes_TDPplot1 h.colorbar_TA h.axes_TDPplot2 h.axes_TDPcmap ...
             h.axes_tdp_BIC], 'Visible', 'off');
     end

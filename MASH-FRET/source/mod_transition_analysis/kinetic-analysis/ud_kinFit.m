@@ -8,7 +8,6 @@ function ud_kinFit(h_fig)
 
 % collect interface parameters
 h = guidata(h_fig);
-def_clrlst = h.color_list;
 p = h.param.TDP;
 proj = p.curr_proj;
 tpe = p.curr_type(proj);
@@ -19,194 +18,130 @@ curr = p.proj{proj}.curr{tag,tpe};
 prm = p.proj{proj}.prm{tag,tpe};
 
 % set all control enabled
-setProp(h.uipanel_TA_stateTransitionRates, 'Enable', 'on');
+setProp(h.uipanel_TA_stateLifetimes, 'Enable', 'on');
 
 % reset edit field background color
-set([h.edit_TDP_nExp h.edit_TDPbsprm_01 h.edit_TDPbsprm_02 ...
-    h.edit_TDPfit_aLow h.edit_TDPfit_aStart h.edit_TDPfit_aUp ...
-    h.edit_TDPfit_decLow h.edit_TDPfit_decStart h.edit_TDPfit_decUp ...
-    h.edit_TDPfit_betaLow h.edit_TDPfit_betaStart h.edit_TDPfit_betaUp], ...
-    'backgroundcolor', [1 1 1]);
+set(h.edit_TA_slBin,'backgroundcolor',[1 1 1]);
 
 if ~(isfield(curr,'clst_res') && ~isempty(curr.clst_res{1}))
-    setProp(h.uipanel_TA_stateTransitionRates, 'Enable', 'off');
-    set(h.listbox_TDPtrans, 'String', '', 'Value', 0);
-    set(h.popupmenu_TDP_expNum, 'Value', 1, 'String', {''});
+    setProp(h.uipanel_TA_stateLifetimes, 'Enable', 'off');
     return
 end
 
 % collect processing parameters
-curr_k = curr.kin_start{2}(2);
-if isfield(prm,'kin_res') && ~isempty(prm.kin_res) && ...
-        size(prm.kin_res,1)>=curr_k && ~isempty(prm.kin_res{curr_k,2})
+mat = prm.clst_start{1}(4);
+clstDiag = prm.clst_start{1}(9);
+J = curr.lft_start{2}(1);
+v = curr.lft_start{2}(2);
+bin = curr.lft_start{2}(3);
+excl = curr.lft_start{2}(4);
+rearr = curr.lft_start{2}(5);
+
+if isfield(prm,'lft_res') && ~isempty(prm.lft_res) && ...
+        size(prm.lft_res,1)>=v && ~isempty(prm.lft_res{v,2})
     isRes = true;
 else
     isRes = false;
 end
-J = curr.kin_start{2}(1);
-nTrs = size(curr.clst_res{1}.mu{J},1);
-kin_start = curr.kin_start{1}(curr_k,:);
-stchExp = kin_start{1}(1);
-if stchExp
-    curr_exp = 1;
-    nExp = 1;
-else
-    curr_exp = kin_start{1}(3);
-    nExp = kin_start{1}(2);
-end
-boba = kin_start{1}(4);
-n_rep = kin_start{1}(5);
-n_spl = kin_start{1}(6);
-w = kin_start{1}(7);
-rearr = kin_start{1}(9);
-amp_prm = kin_start{2}(curr_exp,1:3);
-dec_prm = kin_start{2}(curr_exp,4:6);
-beta_prm = kin_start{2}(curr_exp,7:9);
-clr = prm.clst_start{3}(curr_k,:);
 
-% update transition list
+% update dwell time processing
+set(h.edit_TA_slBin, 'String', num2str(bin));
+set(h.checkbox_TA_slExcl, 'Value', excl);
+set(h.checkbox_tdp_rearrSeq, 'Value', rearr);
+
+% update state value list
+% bin state values
+nTrs = getClusterNb(J,mat,clstDiag);
+[j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
+[vals,~] = binStateValues(curr.clst_res{1}.mu{J},bin,[j1,j2]);
+vals = unique(round(100*vals)/100);
+V = numel(vals);
 str_list = {};
-for k = 1:nTrs
-    vals = round(100*curr.clst_res{1}.mu{J}(k,[1,2]))/100;
-    str_list = cat(2,str_list,...
-        strcat(num2str(vals(1)),' to ',num2str(vals(2))));
+for val = 1:V
+    str_list = cat(2,str_list,num2str(vals(val)));
 end
 if isempty(str_list)
-    str_list = {''};
+    str_list = {'Select a state value'};
 end
-set(h.listbox_TDPtrans, 'String', str_list, 'Value', curr_k);
-
-% update color list
-nClr = size(def_clrlst,2);
-clrlst = def_clrlst;
-i = 0;
-for c = 1:size(p.colList,1)
-    if c>nClr
-        i = i+1;
-        clrlst = cat(2,clrlst,sprintf('random color n°%i',i));
-    end
-end
-[id,o,o] = find(p.colList(:,1)==clr(1) & p.colList(:,2)==clr(2) & ...
-    p.colList(:,3)==clr(3));
-set(h.popupmenu_TDPcolour, 'String', clrlst, 'Value', id(1));
-set(h.edit_TDPcolour,'Enable','inactive','BackgroundColor',clr);
-
-% update exponential list
-str_e = cell(1,nExp);
-for i = 1:nExp
-    str_e{i} = sprintf('exponential n°:%i', i);
-end
-set(h.popupmenu_TDP_expNum, 'Value', curr_exp, 'String', str_e);
-
-% update fit method
-set(h.checkbox_tdp_rearrSeq, 'Value', rearr);
-set(h.radiobutton_TDPstretch, 'Value', stchExp);
-set(h.radiobutton_TDPmultExp, 'Value', ~stchExp);
-set(h.edit_TDP_nExp, 'String', num2str(nExp));
-set(h.checkbox_BOBA, 'Value', boba);
-if boba
-    set(h.edit_TDPbsprm_01, 'String', num2str(n_rep));
-    set(h.edit_TDPbsprm_02, 'String', num2str(n_spl));
-    set(h.checkbox_bobaWeight, 'Value', w);
-else
-    set([h.text_bs_nRep h.edit_TDPbsprm_01 h.text_bs_nSamp ...
-        h.edit_TDPbsprm_02 h.checkbox_bobaWeight], 'Enable', 'off');
-    set([h.edit_TDPbsprm_01,h.edit_TDPbsprm_02], 'String', '');
-end
-
-% update fit parameters
-if stchExp
-    set([h.edit_TDP_nExp h.popupmenu_TDP_expNum], 'Enable', 'off');
-    set(h.edit_TDPfit_betaLow, 'String', num2str(beta_prm(1)));
-    set(h.edit_TDPfit_betaStart, 'String', num2str(beta_prm(2)));
-    set(h.edit_TDPfit_betaUp, 'String', num2str(beta_prm(3)));
-else
-    set([h.text_TDPfit_beta h.edit_TDPfit_betaLow ...
-        h.edit_TDPfit_betaStart h.edit_TDPfit_betaUp], 'Enable', 'off');
-    set([h.edit_TDPfit_betaLow h.edit_TDPfit_betaStart ...
-        h.edit_TDPfit_betaUp], 'String', '');
-end
-set(h.edit_TDPfit_aLow, 'String', num2str(amp_prm(1)));
-set(h.edit_TDPfit_aStart, 'String', num2str(amp_prm(2)));
-set(h.edit_TDPfit_aUp, 'String', num2str(amp_prm(3)));
-set(h.edit_TDPfit_decLow, 'String', num2str(dec_prm(1)));
-set(h.edit_TDPfit_decStart, 'String', num2str(dec_prm(2)));
-set(h.edit_TDPfit_decUp, 'String', num2str(dec_prm(3)));
-
+set(h.popupmenu_TA_slStates, 'String', str_list, 'Value', v);
 
 % update fit results
 if isRes
     
     % collect results
-    kin_k = prm.kin_res(curr_k,:);
-    boba = prm.kin_start{1}{curr_k,1}(4);
-    stchExp = prm.kin_start{1}{curr_k,1}(1);
-    if boba && curr_exp>size(kin_k{1},1)
-        amp_res = NaN;
-        dec_res = NaN;
-    elseif ~boba && curr_exp>size(kin_k{2},1)
-        amp_res = NaN;
-        dec_res = NaN;
-    elseif boba && size(kin_k{1},2)>=4 
-        amp_res = kin_k{1}(curr_exp,1:2);
-        dec_res = kin_k{1}(curr_exp,3:4);
-    else
-        amp_res = kin_k{2}(curr_exp,1);
-        dec_res = kin_k{2}(curr_exp,2);
+    lft_k = prm.lft_res(v,:);
+    
+    % update degenerated level list
+    nExp = prm.lft_start{1}{v,1}(3);
+    str_e = cell(1,nExp);
+    for i = 1:nExp
+        str_e{i} = num2str(i);
     end
-    if stchExp
-        if boba && curr_exp>size(kin_k{2},1)
-            beta_res = NaN;
-        elseif ~boba && curr_exp>size(kin_k{2},1)
-            beta_res = NaN;
-        elseif boba && size(kin_k{1},2)>=6
-            beta_res = kin_k{1}(1,5:6);
+    degen = get(h.popupmenu_TA_slDegen,'value');
+    if degen>nExp
+        degen = nExp;
+    end
+    set(h.popupmenu_TA_slDegen, 'Value', degen, 'String', str_e);
+    
+    % show fit results
+    boba = prm.lft_start{1}{v,1}(5);
+    if boba && degen>size(lft_k{1},1)
+        pop_res = NaN;
+        dec_res = NaN;
+    elseif ~boba && degen>size(lft_k{2},1)
+        pop_res = NaN;
+        dec_res = NaN;
+    elseif boba && size(lft_k{1},2)>=4 
+        amp_res = lft_k{1}(degen,1:2);
+        dec_res = lft_k{1}(degen,3:4);
+        pop_res(1) = ...
+            amp_res(1)*dec_res(1)/sum(lft_k{1}(:,1).*lft_k{1}(:,3));
+        if pop_res(1)==1
+            pop_res(2) = 0;
         else
-            beta_res = kin_k{2}(1,3);
+            pop_res(2) = pop_res(1)*(dec_res(2)/dec_res(1)+...
+                amp_res(2)/amp_res(1)+sum(lft_k{1}(:,2)./lft_k{1}(:,1)+...
+                lft_k{1}(:,4)./lft_k{1}(:,3)));
         end
     else
-        beta_res = NaN;
+        amp_res = lft_k{2}(degen,1);
+        dec_res = lft_k{2}(degen,2);
+        pop_res = amp_res(1)*dec_res(1)/sum(lft_k{2}(:,1).*lft_k{2}(:,2));
     end
     
     % set GUI
-    set([h.edit_TDPfit_aRes,h.edit_TDPfit_ampBs,h.edit_TDPfit_decRes,...
-        h.edit_TDPfit_decBs,h.edit_TDPfit_betaRes,h.edit_TDPfit_betaBs], ...
-        'Enable', 'off', 'String', '');
-    if ~(numel(amp_res)==1 && isnan(amp_res))
-        set(h.edit_TDPfit_aRes, 'String', num2str(amp_res(1)), 'Enable', ...
-            'on', 'BackgroundColor', [0.75 1 0.75]);
-        if boba
-            set(h.edit_TDPfit_ampBs, 'String', num2str(amp_res(2)), ...
-                'Enable', 'on', 'BackgroundColor', [0.75 1 0.75]);
-        end
-    end
+    set([h.edit_TA_slTauMean,h.edit_TA_slTauSig h.edit_TA_slPopMean,...
+        h.edit_TA_slPopSig],'Enable','off','String','');
     if ~(numel(dec_res)==1 && isnan(dec_res))
-        set(h.edit_TDPfit_decRes, 'String', num2str(dec_res(1)), 'Enable', ...
+        set(h.edit_TA_slTauMean, 'String', num2str(dec_res(1)), 'Enable', ...
             'on', 'BackgroundColor', [0.75 1 0.75]);
         if boba
-            set(h.edit_TDPfit_decBs, 'String', num2str(dec_res(2)), ...
+            set(h.edit_TA_slTauSig, 'String', num2str(dec_res(2)), ...
                 'Enable', 'on', 'BackgroundColor', [0.75 1 0.75]);
         end
-    end
-    if ~(numel(beta_res)==1 && isnan(beta_res))
-        set(h.edit_TDPfit_betaRes, 'String', num2str(beta_res(1)), ...
-            'Enable', 'on', 'BackgroundColor', [0.75 1 0.75]);
-        if boba
-            set(h.edit_TDPfit_betaBs, 'String', num2str(beta_res(2)), ...
-                'Enable', 'on', 'BackgroundColor', [0.75 1 0.75]);
+        if ~(numel(pop_res)==1 && isnan(pop_res))
+            set(h.edit_TA_slPopMean, 'String', num2str(pop_res(1)), 'Enable', ...
+                'on', 'BackgroundColor', [0.75 1 0.75]);
+            if boba
+                set(h.edit_TA_slPopSig, 'String', num2str(pop_res(2)), ...
+                    'Enable', 'on', 'BackgroundColor', [0.75 1 0.75]);
+            end
         end
     end
     if ~boba 
-        set(h.text_TDPfit_bsRes, 'Enable', 'off');
+        set(h.text_TA_slSig, 'String', '', 'Enable', 'off');
+        set(h.text_TA_slMean, 'String', 'fit');
+    else
+        set(h.text_TA_slSig, 'String', 'sigma');
+        set(h.text_TA_slMean, 'String',' mean');
     end
 
 else
-    set([h.text_TDPfit_res h.edit_TDPfit_aRes h.edit_TDPfit_decRes ...
-        h.edit_TDPfit_betaRes h.text_TDPfit_bsRes ...
-        h.edit_TDPfit_ampBs h.edit_TDPfit_decBs ...
-        h.edit_TDPfit_betaBs], 'Enable', 'off');
-    set([h.edit_TDPfit_aRes h.edit_TDPfit_decRes ...
-        h.edit_TDPfit_betaRes h.edit_TDPfit_ampBs ...
-        h.edit_TDPfit_decBs h.edit_TDPfit_betaBs], 'String', '');
+    set([h.popupmenu_TA_slDegen h.text_TA_slSig h.text_TA_slMean ...
+        h.edit_TA_slTauMean h.edit_TA_slTauSig h.edit_TA_slPopMean ...
+        h.edit_TA_slPopSig], 'Enable', 'off');
+    set([h.edit_TA_slTauMean h.edit_TA_slTauSig h.edit_TA_slPopMean ...
+        h.edit_TA_slPopSig], 'String', '');
+    set(h.popupmenu_TA_slDegen,'string',{'1'},'value',1);
 end
 

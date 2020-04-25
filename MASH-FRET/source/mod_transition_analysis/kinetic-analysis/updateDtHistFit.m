@@ -1,4 +1,4 @@
-function p = updateDtHistFit(p,tag,tpe,curr_k,excl,h_fig)
+function p = updateDtHistFit(p,tag,tpe,v,h_fig)
 
 % collect interface parameters
 proj = p.curr_proj;
@@ -8,49 +8,59 @@ prm = p.proj{proj}.prm{tag,tpe};
 curr = p.proj{proj}.curr{tag,tpe};
 
 % make current settings the last applied settings
-prm.kin_start = curr.kin_start;
-prm.kin_res = curr.kin_res;
+prm.lft_start = curr.lft_start;
+prm.lft_res = curr.lft_res;
 
-J = prm.kin_start{2}(1);
+J = prm.lft_start{2}(1);
+bin = prm.lft_start{2}(3);
+excl = prm.lft_start{2}(4);
+rearr = prm.lft_start{2}(5);
+lft_k = prm.lft_start{1}(v,:);
+stchExp = lft_k{1}(2);
+boba = lft_k{1}(5);
+p_boba = [];
+if boba
+    p_boba = lft_k{1}([6 7 8]);
+end
 mat = prm.clst_start{1}(4);
 clstDiag = prm.clst_start{1}(9);
 dat = prm.clst_res{1}.clusters{J};
-kin_k = prm.kin_start{1}(curr_k,:);
-stchExp = kin_k{1}(1);
+stateVals = prm.clst_res{1}.mu{J};
 
 % reset results
-prm.kin_res(curr_k,:) = p.proj{proj}.def{tag,tpe}.kin_res;
+prm.lft_res(v,:) = p.proj{proj}.def{tag,tpe}.lft_res;
 
 % get fit settings
 if stchExp
     % amp, dec, beta
-    p_fit.lower = kin_k{2}(1,[1 4 7]);
-    p_fit.start = kin_k{2}(1,[2 5 8]);
-    p_fit.upper = kin_k{2}(1,[3 6 9]);
+    p_fit.lower = lft_k{2}(1,[1 4 7]);
+    p_fit.start = lft_k{2}(1,[2 5 8]);
+    p_fit.upper = lft_k{2}(1,[3 6 9]);
 else
     % amp1, dec1, amp2, dec2 ...
-    p_fit.lower = reshape(kin_k{2}(:,[1 4])', [1 ...
-        numel(kin_k{2}(:,[1 4]))]);
-    p_fit.start = reshape(kin_k{2}(:,[2 5])', [1 ...
-        numel(kin_k{2}(:,[2 5]))]);
-    p_fit.upper = reshape(kin_k{2}(:,[3 6])', [1 ...
-        numel(kin_k{2}(:,[3 6]))]);
+    p_fit.lower = reshape(lft_k{2}(:,[1 4])', [1 ...
+        numel(lft_k{2}(:,[1 4]))]);
+    p_fit.start = reshape(lft_k{2}(:,[2 5])', [1 ...
+        numel(lft_k{2}(:,[2 5]))]);
+    p_fit.upper = reshape(lft_k{2}(:,[3 6])', [1 ...
+        numel(lft_k{2}(:,[3 6]))]);
 end
 
-% get bootstrap settings
-boba = kin_k{1}(4);
-p_boba = [];
-if boba
-    p_boba = kin_k{1}([5 6 7]);
+% bin state values
+nTrs = getClusterNb(J,mat,clstDiag);
+[j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
+[stateVals,js] = binStateValues(stateVals,bin,[j1,j2]);
+V = numel(stateVals);
+for val = 1:V
+    for j = 1:numel(js{val})
+        dat(dat(:,end-1)==js{val}(j),end-1) = val;
+        dat(dat(:,end-1)==js{val}(j),end-3) = stateVals(val);
+        dat(dat(:,end)==js{val}(j),end) = val;
+        dat(dat(:,end)==js{val}(j),end-2) = stateVals(val);
+    end
 end
-
-prm.kin_start{1}{curr_k,1}(8) = excl;
-
-% collect state indexes for curent transitions
-[j1,j2] = getStatesFromTransIndexes(curr_k,J,mat,clstDiag);
 
 % re-arrange state sequences by cancelling transitions belonging to diagonal clusters
-rearr = prm.kin_start{1}{curr_k,1}(9);
 if rearr
     [mols,o,o] = unique(dat(:,4));
     dat_new = [];
@@ -68,32 +78,27 @@ if rearr
     dat = dat_new;
 end
 
-% get reference histogram
-wght = prm.kin_start{1}{curr_k,1}(7);
-ref_k = getDtHist(dat, [j1,j2], [], excl, wght);
-prm.clst_res{4}{curr_k} = ref_k;
-
 % histogram fitting
 setContPan('Fitting in progress ...', 'process', h_fig);
-res = fitDt(dat, j1, j2, excl, ref_k, p_fit, p_boba, h_fig);
+res = fitDt(dat, v, excl, prm.clst_res{4}{v}, p_fit, p_boba, h_fig);
 if isempty(res)
     return
 end
 
 if boba
     % update number of replicates
-    prm.kin_start{1}{curr_k,1}(5) = res.n_rep;
-    prm.kin_res{curr_k,1} = res.boba_mean;
-    prm.kin_res{curr_k,3} = res.boba_inf;
-    prm.kin_res{curr_k,4} = res.boba_sup;
-    prm.kin_res{curr_k,5} = {res.histspl,res.boba_fitres};
+    prm.lft_start{1}{v,1}(6) = res.n_rep;
+    prm.lft_res{v,1} = res.boba_mean;
+    prm.lft_res{v,3} = res.boba_inf;
+    prm.lft_res{v,4} = res.boba_sup;
+    prm.lft_res{v,5} = {res.histspl,res.boba_fitres};
 end
 
-prm.kin_res{curr_k,2} = res.fit_ref;
+prm.lft_res{v,2} = res.fit_ref;
 
 % update modifications of processing parameters to current settings
-curr.kin_start = prm.kin_start;
-curr.kin_res = prm.kin_res;
+curr.lft_start = prm.lft_start;
+curr.lft_res = prm.lft_res;
 
 % save modifications
 p.proj{proj}.prm{tag,tpe} = prm;

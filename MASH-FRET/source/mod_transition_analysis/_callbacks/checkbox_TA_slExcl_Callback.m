@@ -1,4 +1,4 @@
-function checkbox_tdp_rearrSeq_Callback(obj,evd,h_fig)
+function checkbox_TA_slExcl_Callback(obj,evd,h_fig)
 
 h = guidata(h_fig);
 p = h.param.TDP;
@@ -12,8 +12,8 @@ tag = p.curr_tag(proj);
 prm = p.proj{proj}.prm{tag,tpe};
 curr = p.proj{proj}.curr{tag,tpe};
 
-curr.lft_start{2}(5) = get(obj, 'Value');
-prm.lft_start{2}(5) = curr.lft_start{2}(5);
+curr.lft_start{2}(4) = get(obj, 'Value');
+prm.lft_start{2}(4) = curr.lft_start{2}(4);
 
 % recalculate histograms
 V = size(prm.clst_res{4},2);

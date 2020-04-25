@@ -1,4 +1,11 @@
 function p_proj = downCompatibilityTDP(p_proj,tpe,tag)
+% p_proj = downCompatibilityTDP(p_proj,tpe,tag)
+%
+% Re-arrange processing parameters and analysis results of older projects according to current MASH version.
+%
+% p_proj: structure containing project's data
+% tpe: index in list of data type
+% tag: index in list of molecule tag
 
 def = p_proj.def{tag,tpe};
 prm = p_proj.prm{tag,tpe};
@@ -61,7 +68,9 @@ if isfield(prm,'kin_start') && size(prm.kin_start,2)>=2
         prm.kin_start{1} = kin_start;
         prm.kin_start{2} = [J,curr_k];
     elseif size(prm.kin_start,1)==0
-        prm.kin_start = def.kin_start;
+        prm.kin_start{1} = cell(1,2);
+        prm.kin_start{2} = [1,1];
+        
     end
     prm.clst_start{1}(4) = 1; % cluster constraint
 end
@@ -112,8 +121,8 @@ if isfield(prm,'clst_start') && size(prm.clst_start,2)>=2 && ...
             [j1_old,j2_old] = getStatesFromTransIndexes(1:nTrs_old,J,true,...
                 false);
             [j1,j2] = getStatesFromTransIndexes(1:nTrs,J,true,true);
-            newkinstart = repmat(def.kin_start{1},nTrs,1);
-            newkinres = repmat(def.kin_res,nTrs,1);
+            newkinstart = cell(nTrs,2);
+            newkinres = cell(nTrs,5);
             newclstres = repmat(def.clst_res(4),1,nTrs);
             for k = 1:nTrs_old
                 incl = j1==j1_old(k) & j2==j2_old(k);
@@ -203,6 +212,37 @@ end
 % 7.3.2020: add bootstrap histograms
 if isfield(prm,'kin_res') && size(prm.kin_res,2)==4
     prm.kin_res = cat(2,prm.kin_res,cell(size(prm.kin_res,1),1));
+end
+
+% 24.4.2020: adapt to new dwell time analysis procedure (lifetime+model)
+excl = def.lft_start{2}(4);
+rearr = def.lft_start{2}(5);
+if isfield(prm,'kin_def') && ~isfield(prm,'lft_def')
+    if size(prm.kin_def,2)>=1 && ~isempty(prm.kin_def{1})
+        excl = prm.kin_def{1}(end-1);
+        rearr = prm.kin_def{1}(end);
+        prm.lft_def{1} = [def.lft_def{1}(1),prm.kin_def{1}(1:end-2)];
+        if size(prm.kin_def,2)>=2
+            prm.lft_def{2} = prm.kin_def{2};
+        end
+    end
+    prm = rmfield(prm,'kin_def');
+end
+if isfield(prm,'kin_start') && ~isfield(prm,'lft_start')
+    if size(prm.kin_start,2)>=1 
+        prm.lft_start{1} = def.lft_start{1}; % reset start fit param
+        if size(prm.kin_start,2)>=2 && size(prm.kin_start{2},2>=2)
+            prm.lft_start{2} = ...
+                [prm.kin_start{2},def.lft_start{2}(2),excl,rearr];
+        end
+    end
+    prm = rmfield(prm,'kin_start');
+end
+if isfield(prm,'kin_res') && ~isfield(prm,'lft_res') % reset fit results
+    disp(['Transition-specific dwell time histograms are not supported ',...
+        'anymore: fitting results have been reset.'])
+    prm.lft_res = def.lft_res;
+    prm = rmfield(prm,'kin_res');
 end
 
 p_proj.prm{tag,tpe} = prm;

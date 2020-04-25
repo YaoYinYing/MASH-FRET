@@ -31,12 +31,12 @@ tag = p.curr_tag(proj);
 tpe = p.curr_type(proj);
 curr = p.proj{proj}.curr{tag,tpe};
 prm = p.proj{proj}.prm{tag,tpe};
-curr_k = curr.kin_start{2}(2);
+v = curr.lft_start{2}(2);
 
 if strcmp(opt,'all') || strcmp(opt,'tdp')
     plotTDP([h.axes_TDPplot1,h.colorbar_TA,h.axes_tdp_BIC], curr, prm);
 end
 if strcmp(opt,'all') || strcmp(opt,'kin')
-    plotKinFit(h.axes_TDPplot2, p, prm, tag, tpe, curr_k,...
+    plotKinFit(h.axes_TDPplot2, p, prm, tag, tpe, v,...
         get(h.pushbutton_TDPfit_log, 'String'))
 end

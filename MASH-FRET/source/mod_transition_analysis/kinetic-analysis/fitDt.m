@@ -1,4 +1,4 @@
-function res = fitDt(dat, j1, j2, excl, hist_ref, p_fit, p_boba, h_fig)
+function res = fitDt(dat, j1, excl, hist_ref, p_fit, p_boba, h_fig)
 
 res = [];
 
@@ -11,10 +11,10 @@ end
 strch = size(p_fit.start,2) == 3;
 nExp = (size(p_fit.start,2)/(2+strch));
 
-% get dwell times concerning j1->j2 transition only
-dat_j1j2 = dat(dat(:,7)==j1 & dat(:,8)==j2,1:end-2);
+% get dwell times concerning j1 only
+dat_j1 = dat(dat(:,7)==j1,1:end-2);
 
-mols = unique(dat_j1j2(:,4));
+mols = unique(dat_j1(:,4));
 N = numel(mols);
 
 boba = ~isempty(p_boba);
@@ -46,15 +46,15 @@ for n = 1:N
         dt_m = dt_m(2:end-1,:);
     end
 
-    dt_m_j1j2 = dt_m(dt_m(:,7)==j1 & dt_m(:,8)==j2,:);
+    dt_m_j1 = dt_m(dt_m(:,7)==j1,:);
     
-    if isempty(dt_m_j1j2)
+    if isempty(dt_m_j1)
         disp(cat(2,'molecule ',num2str(mols(n)),' excluded: no dwell time',...
             ' left after exclusion.'));
         continue
     end
     
-    dt{size(dt,2)+1} = dt_m_j1j2;
+    dt{size(dt,2)+1} = dt_m_j1;
     mol_incl = cat(2,mol_incl,mols(n));
     
     if boba && wght
