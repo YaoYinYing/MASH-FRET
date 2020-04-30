@@ -3,6 +3,7 @@ function updateTAplots(h_fig,varargin)
 % updateTAplots(h_fig,'all')
 % updateTAplots(h_fig,'tdp')
 % updateTAplots(h_fig,'kin')
+% updateTAplots(h_fig,'mdl')
 %
 % Refresh plots in Transition analysis
 %
@@ -10,6 +11,7 @@ function updateTAplots(h_fig,varargin)
 % 'all': refresh all plots
 % 'tdp': refresh TDP plot only
 % 'kin': refresh dwell time histogram only
+% 'mdl': refresh kinetic model only
 
 opt = 'all';
 if ~isempty(varargin)
@@ -22,6 +24,7 @@ if isempty(p.proj)
     cla(h.axes_TDPplot1);
     cla(h.axes_tdp_BIC);
     cla(h.axes_TDPplot2);
+    cla(h.axes_TDPplot3);
     return
 end
 
@@ -39,4 +42,7 @@ end
 if strcmp(opt,'all') || strcmp(opt,'kin')
     plotKinFit(h.axes_TDPplot2, p, prm, tag, tpe, v,...
         get(h.pushbutton_TDPfit_log, 'String'))
+end
+if strcmp(opt,'all') || strcmp(opt,'mdl')
+    plotKinMdl(h.axes_TDPplot3)
 end

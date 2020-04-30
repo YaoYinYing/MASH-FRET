@@ -41,7 +41,6 @@ proj = p.curr_proj;
 
 % collect processing parameters and results
 def = p.proj{proj}.def{tag,tpe};
-lft_res = prm.lft_res(v,:);
 boba = prm.lft_start{1}{v,1}(5);
 strch = prm.lft_start{1}{v,1}(2);
 
@@ -68,7 +67,7 @@ else
     y_lim = [y_min,y_max];
 end
 
-if isequal(lft_res,def.lft_res)
+if ~(size(prm.lft_res,1)>=v && ~isequal(prm.lft_res(v,:),def.lft_res))
     set(h_axes,'Visible','on','YScale',scl);
     title(h_axes, ttl);
     xlim(h_axes,x_lim);
@@ -77,6 +76,7 @@ if isequal(lft_res,def.lft_res)
     ylabel(h_axes, ylbl);
     return
 end
+lft_res = prm.lft_res(v,:);
 
 set(h_axes, 'NextPlot', 'add');
 

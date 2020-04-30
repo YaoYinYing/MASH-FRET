@@ -6,7 +6,8 @@ function def = setDefPrm_TDP(p, proj)
 % p: structure containing interface parameters
 % proj: project index in TA's project list
 
-% Last update, 24.4.2020 by MH: rename fields "kin_def", "kin_start" and "kin_res" in "lft_def", "lft_start" and "lft_res" to identify projects prior new dwelltime analysis and adapt down-compatibility
+% Last update, 25.4.2020 by MH: add field "sim_start" and "sim_res"
+% update, 24.4.2020 by MH: rename fields "kin_def", "kin_start" and "kin_res" in "lft_def", "lft_start" and "lft_res" to identify projects prior new dwelltime analysis and adapt down-compatibility
 % update, 23.2.2019 by MH: (1) Initialize number of replicates with number of molecules in the sample (2) Increase initial TDP binning to 0.01 (3) Activate Gaussian convolution and normalized units on intial TDP (4) Increase initial max. number of states from 4 to 8
 % created 29.4.2014 by MH
 
@@ -65,6 +66,7 @@ for tpe = 1:nTpe
         def{tag,tpe}.lft_def = cell(1,2);
         def{tag,tpe}.lft_start = cell(1,2);
         def{tag,tpe}.lft_res = cell(1,4);
+        def{tag,tpe}.mdl_res = cell(1,4);
         
         % get default TDP axis
         isRatio = 0;
@@ -172,6 +174,20 @@ for tpe = 1:nTpe
         
         % dwell time histogram sample
         def{tag,tpe}.lft_res{5} = [];
+        
+        %% Kinetic model
+        % weighing factor matrix
+        def{tag,tpe}.mdl_res{1} = []; 
+        
+        % cumulated relative error on simulated histogram
+        def{tag,tpe}.mdl_res{2} = []; 
+        
+        % simulated data
+        def{tag,tpe}.mdl_res{3} = []; 
+        
+        % final state values (incl. degenerated levels)
+        def{tag,tpe}.mdl_res{4} = []; 
+        
     end
 end
 

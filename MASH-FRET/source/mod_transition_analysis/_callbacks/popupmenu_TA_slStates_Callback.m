@@ -15,4 +15,5 @@ p.proj{proj}.curr{tag,tpe}.lft_start{2}(2) = get(obj, 'Value');
 h.param.TDP = p;
 guidata(h_fig, h);
 
-updateFields(h_fig, 'TDP');
+ud_kinFit(h_fig);
+updateTAplots(h_fig,'kin');

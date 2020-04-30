@@ -15,12 +15,14 @@ nTrs = getClusterNb(J,mat,clstDiag);
 [j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
 [vals,js] = binStateValues(prm.clst_res{1}.mu{J},bin,[j1,j2]);
 V = numel(vals);
+clst_new = clst;
 for val = 1:V
     for j = 1:numel(js{val})
-        clst(clst(:,end-1)==js{val}(j),end-1) = val;
-        clst(clst(:,end)==js{val}(j),end) = val;
+        clst_new(clst(:,end-1)==js{val}(j),end-1) = val;
+        clst_new(clst(:,end)==js{val}(j),end) = val;
     end
 end
+clst = clst_new;
 
 % re-arrange state sequences by cancelling transitions belonging to diagonal clusters
 if rearr

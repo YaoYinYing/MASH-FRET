@@ -6,7 +6,7 @@ function [tau,amp,gof] = fitMultiExp(y,x,varargin)
 % y: y-data
 % p: structure containing fields:
 %  p.upper: [1-by-2*n] upper bounds for fitting parameters
-%  p.lower: [1-by-2*n] lower counds for fittinf parameters
+%  p.lower: [1-by-2*n] lower bounds for fittinf parameters
 % tau: [n-by-1] decay contants of the n expoenntial functions
 % amp: [n-by-1] relative amplitudes of the n exponential functions
 % gof: goodness of fit
@@ -208,13 +208,10 @@ function [prm,gof] = optimizeMultiExpModel(x,Y,prm0,minVal,maxVal,minAsum,...
 % default
 plotIt = true;
 minVar = 1E-4;
+ncycle = 4;
 n = size(prm0,2);
-varsteps = [0.2 10
-    0.1 1
-    0.01,0.1
-    0.001 0.01
-    0.0001 0.001];
-ncycle = size(varsteps,1);
+varsteps = [logspace(-4,log(0.5),ncycle)',...
+    logspace(log10(min(x(x>0)/100)),log10(max(x)/10),ncycle)'];
 gof = zeros(1,ncycle);
 prm = cell(1,ncycle);
 prm_iter = prm0;
@@ -324,8 +321,8 @@ for ni = 1:n
     yfit = yfit + a(ni)*exp(-x/b(ni));
 end
 
-gof_log = N/sqrt(sum(((log(yfit)-Y).^2).*exp(Y)));
-gof_lin = N/sqrt(sum(((yfit-exp(Y)).^2)));
+gof_log = -sum(Y)/sqrt(sum(((log(yfit)-Y).^2)));
+gof_lin = sum(exp(Y))/sqrt(sum(((yfit-exp(Y)).^2)));
 gof = log(gof_log*gof_lin);
 
 

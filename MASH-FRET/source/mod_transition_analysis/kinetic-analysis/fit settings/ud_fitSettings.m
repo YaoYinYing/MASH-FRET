@@ -2,6 +2,12 @@ function ud_fitSettings(h_fig)
 
 % collect interface parameters
 h = guidata(h_fig);
+
+if ~(isfield(h,'figure_TA_fitSettings') && ...
+        ishandle(h.figure_TA_fitSettings))
+    return
+end
+
 p = h.param.TDP;
 proj = p.curr_proj;
 tpe = p.curr_type(proj);
@@ -36,6 +42,9 @@ else
     curr_exp = lft_start{1}(4);
     nExp = lft_start{1}(3);
 end
+if curr_exp>nExp
+    curr_exp = nExp;
+end
 boba = lft_start{1}(5);
 n_rep = lft_start{1}(6);
 n_spl = lft_start{1}(7);
@@ -51,6 +60,10 @@ else
     isRes = false;
 end
 
+% update state value list
+str_v = get(h.popupmenu_TA_slStates,'string');
+set(q.popupmenu_TA_slStates,'string',str_v,'value',v);
+
 % update exponential list
 str_e = cell(1,nExp);
 for i = 1:nExp
@@ -63,12 +76,11 @@ set(q.radiobutton_TA_slAuto, 'Value', auto);
 set(q.radiobutton_TA_slMan, 'Value', ~auto);
 if auto
     set([q.radiobutton_TDPstretch,q.radiobutton_TDPmultExp,q.edit_TDP_nExp,...
-        q.checkbox_BOBA,q.edit_TDPbsprm_01,q.edit_TDPbsprm_02,...
-        q.checkbox_bobaWeight,q.popupmenu_TDP_expNum,...
-        q.edit_TDPfit_betaLow,q.edit_TDPfit_betaStart,q.edit_TDPfit_betaUp...
-        q.edit_TDPfit_aLow,q.edit_TDPfit_aStart,q.edit_TDPfit_aUp,...
-        q.edit_TDPfit_decLow,q.edit_TDPfit_decStart,q.edit_TDPfit_decUp],...
-        'enable','off');
+        q.checkbox_BOBA,q.text_bs_nRep,q.text_bs_nSamp,q.edit_TDPbsprm_01,...
+        q.edit_TDPbsprm_02,q.checkbox_bobaWeight,q.edit_TDPfit_betaLow,...
+        q.edit_TDPfit_betaStart,q.edit_TDPfit_betaUp,q.edit_TDPfit_aLow,...
+        q.edit_TDPfit_aStart,q.edit_TDPfit_aUp,q.edit_TDPfit_decLow,...
+        q.edit_TDPfit_decStart,q.edit_TDPfit_decUp],'enable','off');
 else
     set(q.radiobutton_TDPstretch, 'Value', stchExp);
     set(q.radiobutton_TDPmultExp, 'Value', ~stchExp);

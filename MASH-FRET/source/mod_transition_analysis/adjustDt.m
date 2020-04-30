@@ -10,8 +10,8 @@ dat = [];
 
 if size(dat0,2)==8
       cols = [7,8];
-elseif size(dat0,2)==3
-    cols = [2,3];
+elseif size(dat0,2)==4
+    cols = [3,4];
 else
     cols = [5,6];
 end
@@ -24,8 +24,8 @@ I = numel(id);
 if I==0
     if size(dat0,2)==8
         dat = [sum(dat0(:,1)),NaN,NaN,dat0(1,4),0,0,0,0];
-    elseif size(dat0,2)==3
-        dat = [sum(dat0(:,1)),0,0];
+    elseif size(dat0,2)==4
+        dat = [sum(dat0(:,1)),dat0(:,2),0,0];
     else
         dat = [sum(dat0(:,1)),NaN,NaN,dat0(1,4),0,0];
     end
@@ -60,8 +60,8 @@ else
                 if size(dat0,2)==8
                     j2 = dat0(id(j),7);
                 end
-                if size(dat0,2)==3
-                    j2 = dat0(id(j),2);
+                if size(dat0,2)==4
+                    j2 = dat0(id(j),3);
                 end
             else
                 dt = sum(dat0(id(i):end,1));
@@ -72,16 +72,16 @@ else
                 if size(dat0,2)==8
                     j2 = dat0(id(i),7);
                 end
-                if size(dat0,2)==3
-                    j2 = dat0(id(i),2);
+                if size(dat0,2)==4
+                    j2 = dat0(id(i),3);
                 end
             end
             
             if size(dat0,2)==8
                 dat = cat(1,dat,[dt,dat0(id(i),2),val2,dat0(id(i),4:5),y,...
                     dat0(id(i),7),j2]);
-            elseif size(dat0,2)==3
-                dat = cat(1,dat,[dt,dat0(id(i),2),j2]);
+            elseif size(dat0,2)==4
+                dat = cat(1,dat,[dt,dat0(id(i),2:3),j2]);
             else
                 dat = cat(1,dat,[dt,dat0(id(i),2),val2,dat0(id(i),4:5),y]);
             end
@@ -97,15 +97,15 @@ else
             if size(dat0,2)==8
                 j2 = dat0(id(i),7);
             end
-            if size(dat0,2)==3
-                j2 = dat0(id(i),2);
+            if size(dat0,2)==4
+                j2 = dat0(id(i),3);
             end
             
             if size(dat0,2)==8
                 dat = cat(1,dat,[dt,dat0(id(i),2),val2,dat0(id(i),4:5),y,...
                     dat0(id(i),7),j2]);
-            elseif size(dat0,2)==3
-                dat = cat(1,dat,[dt,dat0(id(i),2),j2]);
+            elseif size(dat0,2)==4
+                dat = cat(1,dat,[dt,dat0(id(i),2:3),j2]);
             else
                 dat = cat(1,dat,[dt,dat0(id(i),2),val2,dat0(id(i),4:5),y]);
             end

@@ -24,6 +24,7 @@ prm.clst_res = adjustParam('clst_res', def.clst_res, prm);
 prm.lft_def = adjustParam('lft_def', def.lft_def, prm);
 prm.lft_start = adjustParam('lft_start', def.lft_start, prm);
 prm.lft_res = adjustParam('lft_res', def.lft_res, prm);
+prm.mdl_res = adjustParam('mdl_res', def.mdl_res, prm);
 pplot = prm.plot;
 clst_start = prm.clst_start;
 clst_res = prm.clst_res;
@@ -83,11 +84,12 @@ end
 
 lft_start{2} = adjustVal(lft_start{2},def.lft_start{2});
 
+[j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
 if ~isempty(clst_res{2})
     J = lft_start{2}(1);
     bin = prm.lft_start{2}(3);
     mu = clst_res{1}.mu{J};
-    [vals,~] = binStateValues(mu,bin);
+    [vals,~] = binStateValues(mu,bin,[j1,j2]);
     V = numel(vals);
 
     if size(lft_start{1},1)<V

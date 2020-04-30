@@ -31,6 +31,7 @@ for j = 1:V
 end
 prm.lft_start{1} = prm.lft_start{1}(1:V,:);
 prm.lft_res = repmat(def.lft_res,V,1);
+prm.mdl_res = def.mdl_res;
 
 prm.clst_res{4} = cell(1,V);
 for v = 1:V

@@ -164,6 +164,7 @@ if strcmp(opt, 'TDP') || strcmp(opt, 'all')
         ud_TDPplot(h_fig);
         ud_TDPmdlSlct(h_fig);
         ud_kinFit(h_fig);
+        ud_kinMdl(h_fig)
         
         h = guidata(h_fig);
 

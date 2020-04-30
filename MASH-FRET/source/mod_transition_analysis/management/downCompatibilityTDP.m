@@ -229,12 +229,34 @@ if isfield(prm,'kin_def') && ~isfield(prm,'lft_def')
     prm = rmfield(prm,'kin_def');
 end
 if isfield(prm,'kin_start') && ~isfield(prm,'lft_start')
-    if size(prm.kin_start,2)>=1 
-        prm.lft_start{1} = def.lft_start{1}; % reset start fit param
+    if isfield(prm,'clst_res') && size(prm.clst_res,2)>=4 && ...
+            ~isempty(prm.clst_res{4}) && size(prm.kin_start,2)>=1 
+        
+        % reset start fit param
+        J = prm.kin_start{2}(1);
+        bin = def.lft_start{2}(3);
+        mu = prm.clst_res{1}.mu{J};
+        J = prm.clst_start{1}(3);
+        mat = prm.clst_start{1}(4);
+        clstDiag = prm.clst_start{1}(9);
+        nTrs = getClusterNb(J,mat,clstDiag);
+        [j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
+        [vals,~] = binStateValues(mu,bin,[j1,j2]);
+        V = numel(vals);
+        prm.lft_start{1} = repmat(def.lft_def,V,1);
+        
+        % add histogram parameters
         if size(prm.kin_start,2)>=2 && size(prm.kin_start{2},2>=2)
-            prm.lft_start{2} = ...
-                [prm.kin_start{2},def.lft_start{2}(2),excl,rearr];
+            prm.lft_start{2} = [prm.kin_start{2},bin,excl,rearr];
         end
+        
+        % recalculate histograms
+        prm2 = ud_kinPrm(prm,def,J);
+        prm.clst_res{4} = prm2.clst_res{4};
+        
+        
+    else
+        prm.lft_start = def.lft_start;
     end
     prm = rmfield(prm,'kin_start');
 end

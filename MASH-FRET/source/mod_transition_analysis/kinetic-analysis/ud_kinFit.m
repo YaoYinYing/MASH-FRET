@@ -1,5 +1,5 @@
 function ud_kinFit(h_fig)
-% Set properties of all controls in panel "Transition rates" to proper values.
+% Set properties of all controls in panel "State lifetimes" to proper values.
 %
 % h_fig: handle to main figure
 
@@ -9,6 +9,10 @@ function ud_kinFit(h_fig)
 % collect interface parameters
 h = guidata(h_fig);
 p = h.param.TDP;
+if isempty(p.proj)
+    return
+end
+
 proj = p.curr_proj;
 tpe = p.curr_type(proj);
 tag = p.curr_tag(proj);
@@ -143,5 +147,9 @@ else
     set([h.edit_TA_slTauMean h.edit_TA_slTauSig h.edit_TA_slPopMean ...
         h.edit_TA_slPopSig], 'String', '');
     set(h.popupmenu_TA_slDegen,'string',{'1'},'value',1);
+end
+
+if isfield(h,'figure_TA_fitSettings') && ishandle(h.figure_TA_fitSettings)
+    ud_fitSettings(h_fig);
 end
 

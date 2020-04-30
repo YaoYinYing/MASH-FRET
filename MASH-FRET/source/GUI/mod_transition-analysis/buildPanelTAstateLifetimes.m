@@ -35,7 +35,8 @@ str0 = 'State binning:';
 str1 = 'exclude first & last';
 str2 = 'recalculate';
 str3 = 'Fit settings...';
-str4 = 'Refresh Fit';
+str4 = 'Fit current';
+str14 = 'Fit all';
 str5 = 'state value';
 str6 = 'degen. level';
 str7 = {'Select a state value'};
@@ -49,7 +50,8 @@ ttstr0 = wrapHtmlTooltipString('<b>Bin states</b> according to their value.');
 ttstr1 = wrapHtmlTooltipString('<b>Exclude first and last dwell times</b> of each sequence.');
 ttstr2 = wrapHtmlTooltipString('<b>Re-build state sequences</b> by ignoring "false" state transitions (<i>i.e.</i>, that belong to diagonal clusters); the dwell time before transition is extended up to the next "true" state transition in the sequence.');
 ttstr3 = wrapHtmlTooltipString('Open fit settings');
-ttstr4 = wrapHtmlTooltipString('<b>Start exponential fit</b> with current settings.');
+ttstr4 = wrapHtmlTooltipString('<b>Refresh exponential fit</b> on current histogram.');
+ttstr12 = wrapHtmlTooltipString('<b>Refresh exponential fit</b> for all histograms.');
 ttstr5 = wrapHtmlTooltipString('Select a <b>state value</b>');
 ttstr6 = wrapHtmlTooltipString('Select a <b>degenerated level</b>');
 ttstr7 = wrapHtmlTooltipString('Bootstap mean of <b>state lifetime</b> (in seconds)');
@@ -69,11 +71,12 @@ wtxt0 = getUItextWidth(str5,p.fntun,p.fntsz1,'normal',p.tbl);
 wtxt1 = getUItextWidth(str6,p.fntun,p.fntsz1,'normal',p.tbl);
 wtxt2 = max([getUItextWidth(str11,p.fntun,p.fntsz1,'normal',p.tbl), ...
     getUItextWidth(str12,p.fntun,p.fntsz1,'normal',p.tbl)]);
-wbut2 = getUItextWidth(str13,p.fntun,p.fntsz1,'normal',p.tbl)+p.wbrd;
+wbut3 = getUItextWidth(str13,p.fntun,p.fntsz1,'normal',p.tbl)+p.wbrd;
 wcol = wtxt2+2*wedit0+p.mg/fact;
 wcb0 = wcol;
 wbut0 = wcol;
-wbut1 = wcol;
+wbut1 = getUItextWidth(str4,p.fntun,p.fntsz1,'normal',p.tbl)+p.wbrd;
+wbut2 = wcol-wbut1-p.mg/fact;
 mgpop = wcol-wtxt0-wtxt1;
 wedit1 = wcol-wtxt3;
 
@@ -124,6 +127,13 @@ y = y-p.mg-hbut0;
 h.pushbutton_TDPfit_fit = uicontrol('style','pushbutton','parent',h_pan,...
     'units',p.posun,'fontunits',p.fntun,'fontsize',p.fntsz1,'position',...
     [x,y,wbut1,hbut0],'string',str4,'tooltipstring',ttstr4,'callback',...
+    {@pushbutton_TDPfit_fit_Callback,h_fig});
+
+x = x+wbut1+p.mg/fact;
+
+h.pushbutton_TA_slFitAll = uicontrol('style','pushbutton','parent',h_pan,...
+    'units',p.posun,'fontunits',p.fntun,'fontsize',p.fntsz1,'position',...
+    [x,y,wbut2,hbut0],'string',str14,'tooltipstring',ttstr12,'callback',...
     {@pushbutton_TDPfit_fit_Callback,h_fig});
 
 x = p.mg;
@@ -225,10 +235,10 @@ tiaxes = get(h_axes,'tightinset');
 posaxes = getRealPosAxes([x,y,waxes0,haxes0],tiaxes,'traces');
 set(h_axes,'position',posaxes);
 
-x = posaxes(1)+posaxes(3)-p.mg-wbut2;
+x = posaxes(1)+posaxes(3)-p.mg-wbut3;
 y = posaxes(2)+posaxes(4)-p.mg-hbut0;
 
 h.pushbutton_TDPfit_log = uicontrol('style','pushbutton','parent',h_pan,...
     'units',p.posun,'fontunits',p.fntun,'fontsize',p.fntsz1,'position',...
-    [x,y,wbut2,hbut0],'string',str13,'tooltipstring',ttstr9,'callback',...
+    [x,y,wbut3,hbut0],'string',str13,'tooltipstring',ttstr9,'callback',...
     {@pushbutton_TDPfit_log_Callback,h_fig});

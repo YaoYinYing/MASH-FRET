@@ -1,7 +1,7 @@
 function h = buildPanelTAkineticModel(h,p)
 % h = buildPanelTAkineticModel(h,p)
 %
-% Builds panel "Kinetic model" in "Transition analysis" module.
+% Builds panel "Kinetic model" in "Transition analysis" module, including tabs "TDP", "Histogram" and "Dwell times".
 %
 % h: structure to update with handles to new UI components and that must contain fields:
 %   h.figure_MASH: handle to main figure
@@ -15,7 +15,7 @@ str1 = 'Comparison with simulation:';
 ttl0 = 'TDP';
 ttl1 = 'Histogram';
 ttl2 = 'Dwell times';
-ttstr0 = wrapHtmlTooltipString('<b>Repeat simulation</b>');
+ttstr0 = wrapHtmlTooltipString('<b>Refresh simulation</b> and model identification');
 
 % parent
 h_fig = h.figure_MASH;
@@ -41,7 +41,8 @@ h.pushbutton_TA_refreshModel = uicontrol('style','pushbutton','parent',...
 y = y-p.mg-haxes0;
 
 h.axes_TDPplot3 = axes('parent',h_pan,'units',p.posun,'fontunits',p.fntun,...
-    'fontsize',p.fntsz1,'position',[x,y,waxes0,haxes0],'visible','off');
+    'fontsize',p.fntsz1,'position',[x,y,waxes0,haxes0],'box','on','xtick',...
+    [],'ytick',[],'color','none');
 
 x = p.mg+waxes0+p.mg;
 y = pospan(4)-p.mgpan-htxt0;
@@ -57,9 +58,13 @@ h.uitabgroup_TA_simModel = uitabgroup('parent',h_pan,'units',p.posun,...
 h_tabgrp = h.uitabgroup_TA_simModel;
 
 h.uitab_TA_tdp = uitab('parent',h_tabgrp,'units',p.posun,'title',ttl0);
+h = buildTAtabTdp(h,p);
 
-h.uitab_TA_hist = uitab('parent',h_tabgrp,'units',p.posun,'title',ttl1);
+h.uitab_TA_histogram = uitab('parent',h_tabgrp,'units',p.posun,'title',...
+    ttl1);
+h = buildTAtabHistogram(h,p);
 
 h.uitab_TA_dwelltimes = uitab('parent',h_tabgrp,'units',p.posun,'title',...
     ttl2);
+h = buildTAtabDwelltimes(h,p);
 
