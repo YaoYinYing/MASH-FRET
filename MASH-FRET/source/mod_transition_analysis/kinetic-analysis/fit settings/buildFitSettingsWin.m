@@ -8,6 +8,7 @@ function buildFitSettingsWin(h_fig)
 % get interface parameters
 h = guidata(h_fig);
 if isfield(h,'figure_TA_fitSettings') && ishandle(h.figure_TA_fitSettings)
+    figure(get(h.figure_TA_fitSettings,'number'));
     return
 end
 
