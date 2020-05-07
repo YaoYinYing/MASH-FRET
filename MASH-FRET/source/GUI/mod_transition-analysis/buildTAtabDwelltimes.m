@@ -11,9 +11,7 @@ function h = buildTAtabDwelltimes(h,p)
 hpop0 = 22;
 fact = 5;
 str0 = {'Select a state value'};
-str1 = {'simulation','experimental','overlay'};
 ttstr0 = wrapHtmlTooltipString('Select a <b>state value</b> to calculate the dwell time histogram for');
-ttstr1 = wrapHtmlTooltipString('Select <b>data</b> to display in the histogram plot');
 
 % parents
 h_fig = h.figure_MASH;
@@ -34,14 +32,6 @@ h.popupmenu_TA_mdlDtState = uicontrol('style','popupmenu','parent',h_tab,...
     [x,y,wpop0,hpop0],'string',str0,'tooltipstring',ttstr0,'callback',...
     {@popupmenu_TA_mdlDat_Callback,h_fig});
 
-x = x+wpop0+p.mg/fact;
-
-h.popupmenu_TA_mdlDtDat = uicontrol('style','popupmenu','parent',h_tab,...
-    'units',p.posun,'fontunits',p.fntun,'fontsize',p.fntsz1,'position',...
-    [x,y,wpop0,hpop0],'string',str1,'tooltipstring',ttstr1,'callback',...
-    {@popupmenu_TA_mdlDat_Callback,h_fig});
-
-x = p.mg;
 y = y-p.mg-haxes0;
 
 h.axes_TA_mdlDt = axes('parent',h_tab,'units',p.posun,'fontunits',p.fntun,...

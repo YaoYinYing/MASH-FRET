@@ -72,12 +72,14 @@ try
         pname = h.kinsoft_res{1}{2};
         fname = h.kinsoft_res{1}{3};
         Js = h.kinsoft_res{1}{5}(:,1)';
-        
+        states = h.kinsoft_res{2}{2};
+          
         t3 = tic;
-        
-        [ks,mat,prob0] = routine_getRates(pname,fname,Js,h_fig);
-        
+
+        [ks,mat,prob0] = routine_getRates(pname,fname,Js,states,h_fig);
+          
         t_3 = toc(t3);
+
 
         h.kinsoft_res{3} = {t_3,ks,mat,prob0};
         h.kinsoft_res(end) = cell(1,1);

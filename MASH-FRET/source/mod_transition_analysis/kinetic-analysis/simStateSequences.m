@@ -60,7 +60,7 @@ for n = 1:N
 %         state1 = state2;
 %     end
 %     dt_n = getDtFromDiscr(seq,1);
-%     dt = cat(1,dt,[repmat(n,[size(dt_n,1),1]),dt_n]);
+%     dt = cat(1,dt,[dt_n(:,1),repmat(n,[size(dt_n,1),1]),dt_n(:,2:end)]);
     
     dt_n = [];
     l = 0;
@@ -83,6 +83,7 @@ for n = 1:N
     
     dt = cat(1,dt,[dt_n(:,1),repmat(n,[size(dt_n,1),1]),dt_n(:,2:end)]);
 end
+dt(dt(:,1)<1,:) = [];
 
 w_exp = zeros(J);
 tp_exp = zeros(J);
@@ -93,10 +94,10 @@ for j1 = 1:J
         if j1==j2
             continue
         end
-        dt_j1j2 = dt_j1(dt_j1(:,4)==j2,2);
-        w_exp(j1,j2) = numel(dt_j1j2)/(size(dt_j1(~isnan(dt_j1(:,4)),:),1));
-        tp_exp(j1,j2) = numel(dt_j1j2)/sum(dt_j1(~isnan(dt_j1(:,4)),2));
-        n_exp(j1,j2) = size(dt_j1j2,1);
+        dt_j1j2 = dt_j1(dt_j1(:,4)==j2,1);
+        w_exp(j1,j2) = numel(dt_j1j2)/size(dt_j1,1);
+        tp_exp(j1,j2) = numel(dt_j1j2)/sum(dt_j1(:,1));
+        n_exp(j1,j2) = numel(dt_j1j2);
     end
 end
 tp_exp(~~eye(size(tp_exp))) = 1-sum(tp_exp,2);

@@ -118,8 +118,9 @@ if strcmp(opt,'n')
 
     % convert variation step into number of transitions
     Ntot = sum(sum(mat0));
-    varsteps = [logspace(2,0,5),varsteps(2:end)]*Ntot;
-    varsteps = round([varsteps,1]);
+    varsteps = round([[10,varsteps]*Ntot,1]);
+elseif strcmp(opt,'tp')
+    varsteps = [1,0.5,varsteps/10];
 end
 
 % start probability variation, data simulation and data comparison cycles
@@ -132,12 +133,16 @@ for restart = 1:T
     
     disp(['restart: ',num2str(restart),' ...']);
     
-    if ~strcmp(opt,'n') && restart>1
+    if strcmp(opt,'w') && restart>1
         mat0 = rand(J);
-        if strcmp(opt,'w')
-            mat0(~~eye(J)) = 0;
-        end
+        mat0(~~eye(J)) = 0;
         mat0 = mat0./repmat(sum(mat0,2),[1,J]);
+    elseif strcmp(opt,'tp') && restart>1
+        diagTerms = mat0(~~eye(size(mat0)));
+        mat0 = rand(J);
+        mat0(~~eye(J)) = 0;
+        mat0 = repmat((1-diagTerms),[1,J]).*mat0./repmat(sum(mat0,2),[1,J]);
+        mat0(~~eye(J)) = diagTerms;
         
     elseif strcmp(opt,'n')
         % generate random number of transitions between same state values
@@ -189,7 +194,8 @@ for restart = 1:T
                     varsteps(cycle),r,expPrm,opt,[]);
 
                 if gof_iter>gof_prev
-                    if gof_iter>=max(gof) && gof_iter>=max(gof_all)
+                    if gof_iter>=max(gof) && gof_iter>=bestgof && ...
+                            gof_iter>=max(gof_all)
                         disp(['>> improvement: ',num2str(gof_iter)]);
                         disp(mat_iter);
 
@@ -243,7 +249,7 @@ for s = 1:nSpl
     end
 end
 mat_iter = mean(mat_spl,3);
-mat_err = 3*std(mat_spl,[],3);
+mat_err = std(mat_spl,[],3);
 disp(['best fit: ',num2str(bestgof)]);
 disp(['processing time: ',num2str(toc(t))]);
 disp(mat_iter);
@@ -254,6 +260,7 @@ function [mat,bestgof] = varyProb(mat,gof,j1s,degen,step,r,expPrm,opt,h_fig)
 
 % defaults
 valmax = 1;
+valmin = 0;
 
 J = size(mat,2);
 if strcmp(opt,'n')
@@ -279,14 +286,6 @@ for j1 = j1s
                 valmax = 100*Ntot;
             end
         end
-
-        if strcmp(opt,'tp') && j1==j2
-            valmin = 0.1;
-        elseif strcmp(opt,'tp')
-            valmax = 0.9;
-        else
-            valmin = 0;
-        end
         
         vardown = false;
         varup = false;
@@ -304,13 +303,15 @@ for j1 = j1s
             if ~isempty(mat_down)
                 [gof_down,res] = ...
                     calcGOF(degen,mat_down,r,expPrm,opt,h_fig);
-                switch opt
-                    case 'w'
-                        mat_down = res.w_exp;
-                    case 'tp'
-                        mat_down = res.tp_exp;
-                    case 'n'
-                        mat_down = res.n_exp;
+                if ~isempty(res)
+                    switch opt
+                        case 'w'
+                            mat_down = res.w_exp;
+                        case 'tp'
+                            mat_down = res.tp_exp;
+                        case 'n'
+                            mat_down = res.n_exp;
+                    end
                 end
                 if gof_down>gof
                     vardown = true;
@@ -327,13 +328,15 @@ for j1 = j1s
             end
             if ~isempty(mat_up)
                 [gof_up,res] = calcGOF(degen,mat_up,r,expPrm,opt,h_fig);
-                switch opt
-                    case 'w'
-                        mat_up = res.w_exp;
-                    case 'tp'
-                        mat_up = res.tp_exp;
-                    case 'n'
-                        mat_up = res.n_exp;
+                if ~isempty(res)
+                    switch opt
+                        case 'w'
+                            mat_up = res.w_exp;
+                        case 'tp'
+                            mat_up = res.tp_exp;
+                        case 'n'
+                            mat_up = res.n_exp;
+                    end
                 end
                 if gof_up>gof
                     varup = true;
@@ -364,13 +367,15 @@ for j1 = j1s
                     break
                 end
                 [gof_up,res] = calcGOF(degen,mat_up,r,expPrm,opt,h_fig);
-                switch opt
-                    case 'w'
-                        mat_up = res.w_exp;
-                    case 'tp'
-                        mat_up = res.tp_exp;
-                    case 'n'
-                        mat_up = res.n_exp;
+                if ~isempty(res)
+                    switch opt
+                        case 'w'
+                            mat_up = res.w_exp;
+                        case 'tp'
+                            mat_up = res.tp_exp;
+                        case 'n'
+                            mat_up = res.n_exp;
+                    end
                 end
                 if gof_up<=gof_up_prev
                     mat_up = mat_up_prev;
@@ -405,13 +410,15 @@ for j1 = j1s
                 end
                 [gof_down,res] = ...
                     calcGOF(degen,mat_down,r,expPrm,opt,h_fig);
-                switch opt
-                    case 'w'
-                        mat_down = res.w_exp;
-                    case 'tp'
-                        mat_down = res.tp_exp;
-                    case 'n'
-                        mat_down = res.n_exp;
+                if ~isempty(res)
+                    switch opt
+                        case 'w'
+                            mat_down = res.w_exp;
+                        case 'tp'
+                            mat_down = res.tp_exp;
+                        case 'n'
+                            mat_down = res.n_exp;
+                    end
                 end
                 if gof_down<=gof_down_prev
                     mat_down = mat_down_prev;
@@ -460,9 +467,15 @@ switch opt
         res = simStateSequences(tp,expT*r,Ls);
     case 'tp'
         tp = mat;
-        res = simStateSequences(tp,expT*r,Ls);
+        res = simStateSequences(tp,[],Ls);
 end
 dt_sim0 = res.dt;
+if sum(sum(res.w_exp,1)==0) || sum(sum(res.w_exp,2)==0) || ...
+        sum(sum(isnan(res.w_exp)))
+    res = [];
+    gof = -Inf;
+    return
+end
 
 % fusion dwells from degenerated states
 for j = 1:J
@@ -519,12 +532,12 @@ for j1 = 1:J
 end
 
 for j1 = 1:J
-    cum_exp = cum_counts_exp{j1}/sumExp;
-    maxCumExp = max(cum_counts_exp{j1});
-    cum_sim = cum_counts_sim{j1}/sumSim;
-    maxCumSim = max(cum_counts_sim{j1});
-    cmpl_exp = 1-cum_counts_exp{j1}/maxCumExp;
-    cmpl_sim = 1-cum_counts_sim{j1}/maxCumSim;
+    cum_exp = cum_counts_exp{j1};
+    maxCumExp = max(cum_exp);
+    cum_sim = cum_counts_sim{j1};
+    maxCumSim = max(cum_sim);
+    cmpl_exp = 1-cum_exp/maxCumExp;
+    cmpl_sim = 1-cum_sim/maxCumSim;
     
     n = numel(degen{j1});
     
@@ -547,8 +560,8 @@ for j1 = 1:J
         fit_cum_exp = fit_cum_exp + ...
             fitPrm{j1}(2*(i-1)+1)*exp(-bins{j1}/fitPrm{j1}(2*i));
     end
-    fit_cum_exp = maxCumExp*(1-fit_cum_exp)/sumExp;
-    fit_cmpl_exp = 1-sumExp*fit_cum_exp/maxCumExp;
+    fit_cum_exp = maxCumExp*(1-fit_cum_exp);
+    fit_cmpl_exp = 1-fit_cum_exp/maxCumExp;
     
     % plot histograms and fit functions
     if plotIt
@@ -570,27 +583,6 @@ for j1 = 1:J
         hold(h_a,'off');
         ylim(h_a,lim_y);
         xlim(h_a,lim_x);
-        
-        if j1==1
-            switch opt
-                case 'n'
-                    k = res.n_exp./...
-                        repmat(sum(res.n_exp,2)./r',1,size(res.n_exp,2));
-                case 'w'
-                    k = repmat(r',1,size(res.n_exp,2)).*res.w_exp;
-                case 'tp'
-                    k = res.tp_exp;
-                    k(~~eye(size(k))) = 0;
-                    k = k/expT;
-            end
-            str = repmat('%0.3f  \t',[1,size(k,2)]);
-            str(end) = 'n';
-            str = sprintf(str,k');
-            t = text(h_a,0,0,str);
-            ext = get(t,'extent');
-            set(t,'position',[lim_x(2)-ext(3),lim_y(1)+ext(4)],'fontunits',...
-                'points','fontsize',fntsz)
-        end
         
         lim_y = [min([cmpl_exp(cmpl_exp>0)',...
             cmpl_sim(cmpl_sim>0)']),...
@@ -626,7 +618,10 @@ for j1 = 1:J
     gof_log_cmpl = -sum(Y_cmpl)/sqrt(sum(((Yfit_cmpl-Y_cmpl).^2)));
     
     % increment GOF
-    gof = gof + log(gof_lin_cum);
+    gof = gof + log(gof_lin_cum*gof_lin_cmpl);
+%     gof = gof + log(sum(cum_sim)*sum(cmpl_sim)/...
+%         sqrt(sum(((fit_cum_exp'-cum_sim).^2).*...
+%         (fit_cmpl_exp'-cmpl_sim).^2)));
 end
 
 
@@ -641,11 +636,7 @@ function mat = setProb(mat,j1,j2,step,opt)
 
 % default
 pmax = 1;
-if j1==j2
-    pmin = 0.1;
-else
-    pmin = 0;
-end
+pmin = 0;
 
 J = size(mat,2);
 
@@ -653,12 +644,7 @@ switch opt
     case 'w'
         j2s = find((1:J)~=j2 & (1:J)~=j1);
     case 'tp'
-        if j1~=j2
-            pmax = 1-mat(j1,j1);
-            j2s = find((1:J)~=j2 & (1:J)~=j1);
-        else
-            j2s = find((1:J)~=j2);
-        end
+        j2s = find((1:J)~=j2);
 end
 
 % increment current transition probability
@@ -682,13 +668,20 @@ else
     mat(j1,j2s) = (pmax-mat(j1,j2))*mat(j1,j2s)/sum(mat(j1,j2s));
 end
 
-% for j1 = 1:J
-%     for j2 = 1:J
-%         if sum(~~mat(j1,:))==1 && sum(~~mat(:,j2))==1
-%             mat = [];
-%             return
-%         end
-%     end
-% end
+% cancel matrix leading to dead-end states or state equilibrium
+w = mat;
+w(~~eye(size(w))) = 0;
+if sum(sum(w,2)==0) || sum(sum(w,1)==0)
+    mat = [];
+    return
+end
+w = w./repmat(sum(w,2),[1,size(w,2)]);
+for j = 1:J
+    if (sum(w(j,:)>0)==1 && sum(w(w(j,:)>0,:)>0)==1 && ...
+            find(w(w(j,:)>0,:)>0)==j)
+        mat = [];
+        return
+    end
+end
 
 

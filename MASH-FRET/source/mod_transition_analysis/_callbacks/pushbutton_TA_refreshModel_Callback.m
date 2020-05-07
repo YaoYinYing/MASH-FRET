@@ -30,64 +30,6 @@ nTrs = getClusterNb(J,mat,clstDiag);
 [j1,j2] = getStatesFromTransIndexes(1:nTrs,J,mat,clstDiag);
 [states,js] = binStateValues(mu,bin,[j1,j2]);
 V = numel(states);
-
-% get relative nnumber of transitions
-clstPop = zeros(max([j1,j2]));
-for k = 1:nTrs
-    clstPop(j1(k),j2(k)) = prm.clst_res{1}.pop{J}(k);
-end
-clstPop = clstPop/sum(sum(clstPop));
-clstBinPop = zeros(V);
-for v1 = 1:V
-    for v2 = 1:V
-        for js1 = js{v1}'
-            for js2 = js{v2}'
-                clstBinPop(v1,v2) = clstBinPop(v1,v2)+clstPop(js1,js2);
-            end
-        end
-    end
-end
-
-% check for state lifetimes
-r = [];
-degen = [];
-fitPrm = cell(1,V);
-A = [];
-w = [];
-if isfield(prm,'lft_res') && ~isempty(prm.lft_res) && ...
-        size(prm.lft_res,1)>=V && size(prm.lft_res,2)>=2
-    for v = 1:V
-        boba = prm.lft_start{1}{v,1}(5);
-        if ~((boba && size(prm.lft_res{v,1},2)>=4) || ...
-                (~boba && size(prm.lft_res{v,2},2)>=2))
-            return
-        else
-            % get restricted rate coefficients
-            if boba
-                amp = prm.lft_res{v,1}(:,1)';
-                dec = prm.lft_res{v,1}(:,3)';
-            else
-                amp = prm.lft_res{v,1}(:,1)';
-                dec = prm.lft_res{v,1}(:,2)';
-            end
-            r_v = 1./dec;
-            A_v = amp.*dec/sum(amp.*dec);
-            w_v = A_v*sum(clstBinPop(v,:));
-            
-            fitPrm{v} = reshape([amp;dec],1,numel([amp;dec]));
-            
-            r = cat(2,r,r_v);
-            w = cat(2,w,w_v);
-            A = cat(2,A,A_v);
-            degen = cat(2,degen,repmat(v,[1,numel(r_v)]));
-            
-        end
-    end
-else
-    return
-end
-states = states(degen);
-
 dat_new = dat;
 for val = 1:V
     for j = 1:numel(js{val})
@@ -118,6 +60,58 @@ if rearr
     dat = dat_new;
 end
 
+% get relative number of transitions
+clstPop = zeros(V);
+for v1 = 1:V
+    for v2 = 1:V
+        if v1==v2
+            continue
+        end
+        clstPop(v1,v2) = size(dat(dat(:,7)==v1 & dat(:,8)==v2,:),1);
+    end
+end
+clstPop = clstPop/sum(sum(clstPop));
+
+% check for state lifetimes
+r = [];
+degen = [];
+fitPrm = cell(1,V);
+A = [];
+w = [];
+if isfield(prm,'lft_res') && ~isempty(prm.lft_res) && ...
+        size(prm.lft_res,1)>=V && size(prm.lft_res,2)>=2
+    for v = 1:V
+        boba = prm.lft_start{1}{v,1}(5);
+        if ~((boba && size(prm.lft_res{v,1},2)>=4) || ...
+                (~boba && size(prm.lft_res{v,2},2)>=2))
+            return
+        else
+            % get restricted rate coefficients
+            if boba
+                amp = prm.lft_res{v,1}(:,1)';
+                dec = prm.lft_res{v,1}(:,3)';
+            else
+                amp = prm.lft_res{v,1}(:,1)';
+                dec = prm.lft_res{v,1}(:,2)';
+            end
+            r_v = 1./dec;
+            A_v = amp.*dec/sum(amp.*dec);
+            w_v = A_v*sum(clstPop(v,:));
+            
+            fitPrm{v} = reshape([amp;dec],1,numel([amp;dec]));
+            
+            r = cat(2,r,r_v);
+            w = cat(2,w,w_v);
+            A = cat(2,A,A_v);
+            degen = cat(2,degen,repmat(v,[1,numel(r_v)]));
+            
+        end
+    end
+else
+    return
+end
+states = states(degen);
+
 % get starting transition probabilities based on number of transitions
 J_deg = numel(states);
 mat0 = zeros(J_deg);
@@ -127,26 +121,26 @@ for j_deg1 = 1:J_deg
             continue
         end
         mat0(j_deg1,j_deg2) = ...
-            A(j_deg1)*A(j_deg2)*clstBinPop(degen(j_deg1),degen(j_deg2));
+            A(j_deg1)*A(j_deg2)*clstPop(degen(j_deg1),degen(j_deg2));
     end
 end
-mat0 = repmat(nL*expT*r',[1,J_deg]).*mat0./repmat(sum(mat0,2),[1,J_deg]); % transition prob
+% mat0 = repmat(nL*expT*r',[1,J_deg]).*mat0./repmat(sum(mat0,2),[1,J_deg]); % transition prob
 % mat0(~~eye(size(mat0))) = 1-sum(mat0,2); % transition prob
-% mat0 = mat0./repmat(sum(mat0,2),[1,J_deg]); % transition prob, diag = 0
-mat0 = mat0*size(dat,1); % number of transitions
+mat0 = mat0./repmat(sum(mat0,2),[1,J_deg]); % transition prob, diag = 0
+% mat0 = mat0*size(dat(dat(:,7)~=dat(:,8)),1); % number of transitions
 
 expPrm.expT = nL*expT;
 expPrm.Ls = sum(p.proj{proj}.bool_intensities,1);
 expPrm.w = w;
-expPrm.clstPop = clstBinPop;
+expPrm.clstPop = clstPop;
 expPrm.dt = dat(:,[1,end-1,end]);
 expPrm.fitPrm = fitPrm;
 expPrm.excl = excl;
 expPrm.trace = getTimeTrace_TA(tpe,tag,p.proj{proj});
 
 % [w,err,simdat] = optimizeProbMat(r,states,expPrm,'tp',mat0); % transition prob
-% [w,err,simdat] = optimizeProbMat(r,states,expPrm,'w',mat0); % transition prob, diag = 0
-[w,err,simdat] = optimizeProbMat(r,states,expPrm,'n',mat0); % number of transitions
+[w,err,simdat] = optimizeProbMat(r,states,expPrm,'w',mat0); % transition prob, diag = 0
+% [w,err,simdat] = optimizeProbMat(r,states,expPrm,'n',mat0); % number of transitions
 
 prm.mdl_res = {w,err,simdat,states};
 

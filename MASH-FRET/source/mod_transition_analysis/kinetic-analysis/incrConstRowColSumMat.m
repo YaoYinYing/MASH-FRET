@@ -1,4 +1,4 @@
-function mat = incrConstRowColSumMat(mat0,j1,j2,incr,isFixed,sumConstr)
+function mat = incrConstRowColSumMat(mat0,j1,j2,incr0,isFixed,sumConstr)
 % mat = incrConstRowColSumMat(mat,j1,j2,incr,isFixed,sumConstr)
 %
 % Increment matrix element located at (j1,j2) and recalculate other elements to respect the constant cum of elements in each row and column.
@@ -12,11 +12,11 @@ function mat = incrConstRowColSumMat(mat0,j1,j2,incr,isFixed,sumConstr)
 %   sumCnstr{j1,j2}: [J-by-J] matrix containing in cell (a1,a2) the sum of all elements to which the element (j1,j2) is constrainted to or (0) if not constrainted
 % mat: re-calculated matrix
 
-% initialize output
-mat = mat0;
-
 % defaults
 Nmin = 0;
+
+% initialize output
+mat = mat0;
 
 if isFixed(j1,j2)
     return
@@ -26,22 +26,31 @@ end
 J = size(mat0,2);
 js = (1:J);
 
-% increment element
-% | 0 0 x 0 0 0 |
-% | 0 0 0 0 0 0 |
-% | 0 0 0 0 0 0 |
-% | 0 0 0 0 0 0 |
-% | 0 0 0 0 0 0 |
-% | 0 0 0 0 0 0 |
+% re-adjust increment
 Nmax = min(min(sumConstr{j1,j2}(sumConstr{j1,j2}>0)));
-if (mat(j1,j2)==Nmax && incr>0) || (mat(j1,j2)==Nmin && incr<0)
-    return
+if ~isinf(Nmax)
+    incr = adjustIncr(incr0,mat0,j1,j2,sumConstr);
+    if mat(j1,j2)>Nmin && (mat(j1,j2)+incr)<Nmin
+        incr = -mat(j1,j2);
+    end
+    if incr==0 || (incr<0 && incr0>0) || (incr>0 && incr0<0)
+        mat = [];
+        return
+    end
+else
+    incr = incr0;
+    if mat(j1,j2)>Nmin && (mat(j1,j2)+incr)<Nmin
+        incr = -mat(j1,j2);
+    end
 end
-if mat(j1,j2)<Nmax && (mat(j1,j2)+incr)>Nmax
-    incr = Nmax-mat(j1,j2);
-elseif mat(j1,j2)>Nmin && (mat(j1,j2)+incr)<Nmin
-    incr = -(mat(j1,j2)-Nmin);
-end
+
+% increment element
+% | 0 0 0 0 0 0 |
+% | 0 0 0 0 0 0 |
+% | 0 0 0 0 0 0 |
+% | x 0 0 0 0 0 |
+% | 0 0 0 0 0 0 |
+% | 0 0 0 0 0 0 |
 mat(j1,j2) = mat(j1,j2)+incr;
 
 % varies an element contrained by sums
@@ -58,7 +67,8 @@ if ~isinf(Nmax)
     if sum(mat(j1,cnstr))==0
         mat(j1,cnstr) = (rowSum-mat(j1,j2))/sum(cnstr);
     else
-        mat(j1,cnstr) = (rowSum-mat(j1,j2)).*mat(j1,cnstr)/sum(mat(j1,cnstr));
+        mat(j1,cnstr) = ...
+            (rowSum-mat(j1,j2)).*mat(j1,cnstr)./sum(mat(j1,cnstr));
     end
     
     % re-calculate elements constraint by the particular column-sum
@@ -85,9 +95,7 @@ if ~isinf(Nmax)
     % | 0 1 1 0 0 0 |
     % | 0 1 1 0 0 0 |
     j2s = js(~~sumConstr{j1,j2}(:,j2));
-    n = 0;
     for j = j2s
-        n = n+1;
         cnstr = ~~sumConstr{j,j2}(j,:);
         rowSum = unique(sumConstr{j,j2}(j,cnstr));
         if sum(mat(j,cnstr))==0
@@ -98,13 +106,14 @@ if ~isinf(Nmax)
         end
     end
     
-    % re-calculate elements constrainted by the particular column-sum of each element previously varied
+    % re-calculate elements constrainted by the row sum
     % | 0 0 0 0 0 0 |
     % | 0 0 0 0 0 0 |
     % | 0 0 0 0 0 0 |
     % | x 1 1 0 0 0 |
     % | 0 0 0 0 0 0 |
     % | 0 0 0 0 0 0 |
+    % check if increment is too big and re-adjust increment
     j2s = js(~~sumConstr{j1,j2}(j1,:));
     for j = j2s
         cnstr = ~~sumConstr{j1,j}(:,j);
@@ -123,16 +132,24 @@ else
     % | 0 0 0 0 0 0 |
     %   v
     %   N
+    js = [j1,j2,find(sum(sumConstr{j1,j2},1))];
+    js = min(js):max(js);
+    js1 = find(js==j1);
+    js2 = find(js==j2);
+    Nsum0 = sum(mat0(js,js),1);
     isFixed = ~sumConstr{j1,j2};
     isFixed(j1,:) = true;
     isFixed(:,j2) = true;
-    Nsum = zeros(1,size(mat,2));
-    Nsum(j1) = sum(mat(j1,:));
-    Nsum(j2) = sum(mat(:,j2));
-    
-    row = j2;
-    col = j1;
-    mat = reorgConstRowColSumMat(mat,isFixed,row,col,Nsum);
+    Nsum = zeros(1,size(js,2));
+    Nsum(js1) = sum(mat(j1,js));
+    Nsum(js2) = sum(mat(js,j2));
+
+    mat_js = reorgConstRowColSumMat(mat(js,js),isFixed(js,js),js2,js1,Nsum);
+    if isempty(mat_js)
+        mat = [];
+        return
+    end
+    mat(js,js) = mat_js;
     
     % re-calculate all other elements 
     % | 0 0 x 0 0 0 |
@@ -143,32 +160,94 @@ else
     % | 0 0 0 0 0 0 |
     %     v   v
     %     N1  N2
-    isFixed(row,:) = true;
-    isFixed(:,col) = true;
-    js = find(sum(sumConstr{j1,j2},1));
-    js = js(js~=j1 & js~=j2);
-    Nsum0 = sum(mat0,1);
-    Nsum(js) = sum(sum(mat(js,:)))*Nsum0(js)/sum(Nsum0(js));
+    isFixed(js2,:) = true;
+    isFixed(:,js1) = true;
+    jid = js~=j1 & js~=j2;
+    Nsum(jid) = sum(sum(mat(jid,js)))*Nsum0(jid)/sum(Nsum0(jid));
     
-    for row = js
-        for col = js
+    for row = js(jid)
+        for col = js(jid)
             if row==col
                 continue
             end
-            mat = reorgConstRowColSumMat(mat,isFixed,row,col,Nsum);
+            mat_js = reorgConstRowColSumMat(mat(js,js),isFixed(js,js),row,...
+                col,Nsum);
+            if isempty(mat_js)
+                mat = [];
+                return
+            end
         end
     end
+    mat(js,js) = mat_js;
 end
 
-mat(mat<0) = 0;
+mat = round(mat);
 
+% cancel matrix leading to dead-end states or state equilibrium
 if ~isempty(mat)
-    for j1 = 1:J
-        if sum(mat(j1,:)>0)==1 && sum(mat(mat(j1,:)>0,:)>0)==1 && ...
-                find(mat(mat(j1,:)>0,:)>0)==j1
+    for j = 1:J
+        % cancel matrix leading to isolated state equilibrium
+        if (sum(mat(j,:)>0)==1 && sum(mat(mat(j,:)>0,:)>0)==1 && ...
+                find(mat(mat(j,:)>0,:)>0)==j) || sum(mat(j,:))==0 || ...
+                sum(mat(:,j))==0
             mat = [];
             return
         end
     end
+end
+
+
+function incr = adjustIncr(incr,mat,j1,j2,sumConstr)
+
+J = size(mat,2);
+incrMax = Inf(J);
+incrMin = -Inf(J);
+
+el0 = mat(j1,j2);
+cnstr = ~~sumConstr{j1,j2}(j1,:);
+rowSum0 = unique(sumConstr{j1,j2}(j1,cnstr));
+cnstr = ~~sumConstr{j1,j2}(:,j2);
+colSum0 = unique(sumConstr{j1,j2}(cnstr,j2));
+incrMin(j1,j2) = -el0;
+incrMax(j1,j2) = min([colSum0,rowSum0])-el0;
+
+cnstr = ~~sumConstr{j1,j2}(:,j2);
+j2s = find(cnstr');
+incrMax(j2s,j2) = colSum0-el0;
+sum1 = sum(mat(cnstr,j2));
+for j = j2s
+    el1 = mat(j,j2);
+    if sum1==0
+        fract1 = 1/sum(cnstr);
+    else
+        fract1 = el1/sum1;
+    end
+    cnstr = ~~sumConstr{j,j2}(j,:);
+    rowSum1 = unique(sumConstr{j,j2}(j,cnstr));
+    incrMin(j,j2) = colSum0-el0-rowSum1/fract1;
+    
+    j3s = find(cnstr);
+    incrMin(j,j3s) = colSum0-el0-rowSum1/fract1;
+    sum2 = sum(mat(j,cnstr));
+    for k = j3s
+        el2 = mat(j,k);
+        if sum2==0
+            fract2 = 1/sum(cnstr);
+        else
+            fract2 = el2/sum2;
+        end
+        cnstr = ~~sumConstr{j,k}(:,k);
+        colSum2 = unique(sumConstr{j,k}(cnstr,k));
+        incrMax(j,k) = colSum0-el0-(rowSum1-colSum2/fract2)/fract1;
+    end
+end
+
+incrMax = min(min(incrMax));
+if incr>incrMax
+    incr = incrMax;
+end
+incrMin = max(max(incrMin));
+if incr<incrMin
+    incr = incrMin;
 end
 

@@ -32,10 +32,10 @@ nExp = 1;
 boba_lft = true;
 nspl_lft = 100;
 wght = false;
-excl = true;
+excl = false;
 rearr_lft = false;
 auto_lft = true;
-bin_lft = 0.05;
+bin_lft = 0.01;
 
 % collect project parameters
 nChan = p.proj{proj}.nb_channel;
